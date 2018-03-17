@@ -1,14 +1,22 @@
 package com.fengs.service.impl;
 
 import com.fengs.Dto.OrderDto;
+import com.fengs.converter.OrderMasterorOrderDto;
 import com.fengs.dataobject.OrderDetail;
 import com.fengs.dataobject.OrderMaster;
+import com.fengs.enums.OrderMasterEnum;
+import com.fengs.repository.OrderMasterRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.weaver.ast.Or;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayList;
@@ -23,6 +31,8 @@ import java.util.List;
 public class OrderServiceImplTest {
     @Autowired
     private OrderServiceImpl orderService;
+    @Autowired
+    private OrderMasterRepository orderMasterRepository;
 
     private  final  String BUYER_OPENID="115811578";
     private final  String Order_Id="1520083218883225144";
@@ -56,10 +66,20 @@ public class OrderServiceImplTest {
 
     @Test
     public void findList() throws Exception {
+        PageRequest request=new PageRequest(0,2);
+        Page<OrderDto> orderDtoPage=orderService.findList(BUYER_OPENID,request);
+     //Page<OrderMaster> orderMasters=orderMasterRepository.findByBuyerOpenid(buyerOpenid,pageable);
+       //List<OrderDto> orderDtoList= OrderMasterorOrderDto.converter(orderMasters.getContent());
+      // return new PageImpl<OrderDto>(orderDtoList,pageable,orderMasters.getTotalElements());
+        Assert.assertNotEquals(0,orderDtoPage.getTotalElements());
     }
 
     @Test
     public void cancel() throws Exception {
+       OrderDto orderDto= orderService.findOne(Order_Id);//先找到需要取消的对象
+      OrderDto result= orderService.cancel(orderDto);
+      Assert.assertEquals(OrderMasterEnum.Cancel.getCode(),result.getOrderStstus());
+      //比较订单状态
     }
 
     @Test

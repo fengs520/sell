@@ -10,6 +10,7 @@ public enum OrderMasterEnum {
     NEW(0,"新下单"),
     Finished(1,"完成"),
     Cancel(2,"订单取消");
+
     private Integer code;
 
     OrderMasterEnum(Integer code, String message) {

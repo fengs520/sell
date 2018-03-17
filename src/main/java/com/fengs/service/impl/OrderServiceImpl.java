@@ -2,6 +2,7 @@ package com.fengs.service.impl;
 
 import com.fengs.Dto.CartDto;
 import com.fengs.Dto.OrderDto;
+import com.fengs.converter.OrderMasterorOrderDto;
 import com.fengs.dataobject.OrderDetail;
 import com.fengs.dataobject.OrderMaster;
 import com.fengs.dataobject.ProductInfo;
@@ -16,9 +17,12 @@ import com.fengs.service.ProductInfoService;
 import com.fengs.utils.KeyUtils;
 
 
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.internal.util.logging.Log;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -28,11 +32,13 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by fengs on 2018/3/2.
  */
 @Service
+@Slf4j
 public class OrderServiceImpl implements OrderService {
     @Autowired
    private OrderDetailRepository orderDetailrepository;
@@ -117,12 +123,46 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Page<OrderDto> findList(String buyerOpenid, Pageable pageable) {
-        return null;
-    }
 
+        Page<OrderMaster> orderMasters = orderMasterRepository.findByBuyerOpenid(buyerOpenid, pageable);
+        List<OrderDto> orderDtoList = OrderMasterorOrderDto.converter(orderMasters.getContent());
+        return new PageImpl<OrderDto>(orderDtoList, pageable, orderMasters.getTotalElements());
+    }
     @Override
+    @Transactional
     public OrderDto cancel(OrderDto orderDto) {
-        return null;
+        OrderMaster orderMaster=new OrderMaster();
+
+        //判断订单状态
+        if(!orderDto.getOrderStstus().equals(OrderMasterEnum.NEW.getCode()))
+        {
+            log.error("取消订单 订单状态不正确,orderId={},orderStatus={}",orderDto.getOrderId(),orderDto.getOrderStstus());
+            throw new ShellException(ResultEnum.ORDER_STATUS_NOPACK);
+        }
+        orderDto.setOrderStstus(OrderMasterEnum.Cancel.getCode());
+        BeanUtils.copyProperties(orderDto,orderMaster);
+        OrderMaster updateResult=orderMasterRepository.save(orderMaster);
+        if(updateResult==null)
+        {
+            log.error("订单取消更新失败 oderMaster={}",orderMaster);
+            throw new ShellException(ResultEnum.ORDRR_CANNEL_Faild);
+        }
+        //修改订单状态
+        //返回库存
+        if(CollectionUtils.isEmpty(orderDto.getOrderDetailList()))
+        {
+            log.error("商品详情表内吴商品信息");
+            throw new ShellException(ResultEnum.ODER_DETAIL_NOTNULL);
+        }
+        //如果已经支付,需要退款
+        List<CartDto> cartDtoList=orderDto.getOrderDetailList().stream().map(e->new CartDto(e.getProductId(),e.getProductQuantity()))
+                .collect(Collectors.toList());
+        productInfoService.insertStock(cartDtoList);
+        if(orderDto.getPayStatus().equals(PayStutusEunm.SuccessPay))
+        {
+            //TODO
+        }
+        return orderDto;
     }
 
     @Override
