@@ -13,7 +13,7 @@ public interface OrderService {
     //创建订单
    OrderDto   create(OrderDto orderDto);
    //查询单个订单
-   OrderDto  findone(Integer orderId);
+   OrderDto  findOne(String orderId);
     //查询订单列表\
     Page<OrderDto>  findList(String buyerOpenid, Pageable pageable);
     //取消订单

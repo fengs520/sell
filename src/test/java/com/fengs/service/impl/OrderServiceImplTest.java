@@ -2,6 +2,7 @@ package com.fengs.service.impl;
 
 import com.fengs.Dto.OrderDto;
 import com.fengs.dataobject.OrderDetail;
+import com.fengs.dataobject.OrderMaster;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
@@ -24,6 +25,7 @@ public class OrderServiceImplTest {
     private OrderServiceImpl orderService;
 
     private  final  String BUYER_OPENID="115811578";
+    private final  String Order_Id="1520083218883225144";
     @Test
     public void create() throws Exception {
         OrderDto orderDto=new OrderDto();
@@ -45,7 +47,12 @@ public class OrderServiceImplTest {
 
     @Test
     public void findone() throws Exception {
-    }
+      OrderDto result=  orderService.findOne(Order_Id);
+
+       log.info("查询到result={}", result);
+       Assert.assertEquals(Order_Id,result.getOrderId());
+
+   }
 
     @Test
     public void findList() throws Exception {

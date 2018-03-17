@@ -21,9 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
+import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -32,12 +35,15 @@ import java.util.List;
 @Service
 public class OrderServiceImpl implements OrderService {
     @Autowired
-   private OrderDetailRepository repository;
+   private OrderDetailRepository orderDetailrepository;
     @Autowired
     private ProductInfoService productInfoService;
     @Autowired
     private OrderMasterRepository orderMasterRepository;
+
+
     @Override
+    @Transactional
     public OrderDto create(OrderDto orderDto) {
         List<CartDto> cartDtolist=new ArrayList<>();
         String orderId= KeyUtils.genrandomKey();
@@ -63,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
             //设置订单详情表的订单id
             //属性拷贝
             BeanUtils.copyProperties(productInfo,orderDetail);
-            repository.save(orderDetail);
+            orderDetailrepository.save(orderDetail);
             //保存订单详情表
             ///创建Cartdto对象
             CartDto cartDto=new CartDto(orderDetail.getProductId(),orderDetail.getProductQuantity());
@@ -87,8 +93,26 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderDto findone(Integer orderId) {
-        return null;
+    public OrderDto findOne(String orderId) {
+       OrderMaster orderMaster= orderMasterRepository.findOne(orderId);
+       if(orderMaster ==null){
+           throw new ShellException(ResultEnum.ORDER_MASTER_NOTNULL);
+       }
+       //订单详情表 如果不存在就抛出异常
+       List<OrderDetail> orderDetailList=orderDetailrepository.findByOrderId(orderId);
+       //注意这里
+        if(CollectionUtils.isEmpty(orderDetailList)){
+            throw new ShellException(ResultEnum.ORDER_DETAIL_NOTNULL);
+            //抛异常
+        }
+       OrderDto orderDto=new OrderDto();
+       BeanUtils.copyProperties(orderMaster,orderDto);
+       //对象的拷贝
+        orderDto.setOrderDetailList(orderDetailList);
+
+
+            ///注意返回
+        return orderDto;
     }
 
     @Override
